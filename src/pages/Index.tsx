@@ -4,8 +4,9 @@ import { Button } from '@/components/ui/button';
 import Dashboard from '@/components/Dashboard';
 import FileManager from '@/components/FileManager';
 import UploadZone from '@/components/UploadZone';
+import MessengerChat from '@/components/MessengerChat';
 
-type TabType = 'home' | 'files' | 'upload';
+type TabType = 'home' | 'files' | 'upload' | 'messages';
 
 export default function Index() {
   const [activeTab, setActiveTab] = useState<TabType>('home');
@@ -14,6 +15,7 @@ export default function Index() {
     { id: 'home' as TabType, label: 'Главная', icon: 'Home' },
     { id: 'files' as TabType, label: 'Мои файлы', icon: 'FolderOpen' },
     { id: 'upload' as TabType, label: 'Загрузка', icon: 'Upload' },
+    { id: 'messages' as TabType, label: 'Сообщения', icon: 'MessageSquare' },
   ];
 
   return (
@@ -104,6 +106,7 @@ export default function Index() {
             {activeTab === 'home' && <Dashboard />}
             {activeTab === 'files' && <FileManager />}
             {activeTab === 'upload' && <UploadZone />}
+            {activeTab === 'messages' && <MessengerChat />}
           </div>
         </main>
       </div>

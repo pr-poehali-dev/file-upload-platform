@@ -21,9 +21,15 @@ interface Contact {
 interface Message {
   id: string;
   senderId: string;
-  text: string;
+  text?: string;
   time: string;
   isOwn: boolean;
+  file?: {
+    name: string;
+    size: string;
+    type: string;
+    url?: string;
+  };
 }
 
 const mockContacts: Contact[] = [
@@ -73,8 +79,30 @@ const mockMessages: Message[] = [
   {
     id: '3',
     senderId: '1',
-    text: 'Отправил файл презентации',
+    time: '10:28',
+    isOwn: false,
+    file: {
+      name: 'Презентация_Q4.pptx',
+      size: '5.2 MB',
+      type: 'pptx',
+    },
+  },
+  {
+    id: '4',
+    senderId: 'me',
     time: '10:30',
+    isOwn: true,
+    file: {
+      name: 'Отчет_финансы.pdf',
+      size: '2.1 MB',
+      type: 'pdf',
+    },
+  },
+  {
+    id: '5',
+    senderId: '1',
+    text: 'Спасибо, скачал!',
+    time: '10:32',
     isOwn: false,
   },
 ];
@@ -107,6 +135,53 @@ export default function MessengerChat() {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
+    }
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0 || !selectedContact) return;
+
+    const file = e.target.files[0];
+    const fileMessage: Message = {
+      id: Date.now().toString(),
+      senderId: 'me',
+      time: new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
+      isOwn: true,
+      file: {
+        name: file.name,
+        size: formatFileSize(file.size),
+        type: file.name.split('.').pop() || 'file',
+      },
+    };
+
+    setMessages([...messages, fileMessage]);
+  };
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+  };
+
+  const handleDownloadFile = (fileName: string) => {
+    const link = document.createElement('a');
+    link.href = '#';
+    link.download = fileName;
+    link.click();
+  };
+
+  const getFileIcon = (type: string) => {
+    const ext = type.toLowerCase();
+    switch (ext) {
+      case 'pdf': return 'FileText';
+      case 'pptx': case 'ppt': return 'Presentation';
+      case 'xlsx': case 'xls': return 'Sheet';
+      case 'docx': case 'doc': return 'FileText';
+      case 'jpg': case 'png': case 'jpeg': return 'Image';
+      case 'zip': case 'rar': return 'Archive';
+      default: return 'File';
     }
   };
 
@@ -246,14 +321,51 @@ export default function MessengerChat() {
                         : 'bg-secondary'
                     }`}
                   >
-                    <p className="text-sm">{message.text}</p>
-                    <p
-                      className={`text-xs mt-1 ${
-                        message.isOwn ? 'text-primary-foreground/70' : 'text-muted-foreground'
-                      }`}
-                    >
-                      {message.time}
-                    </p>
+                    {message.file ? (
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-3 p-3 rounded-lg bg-background/10 border border-background/20">
+                          <Icon
+                            name={getFileIcon(message.file.type)}
+                            size={32}
+                            className={message.isOwn ? 'text-primary-foreground' : 'text-primary'}
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{message.file.name}</p>
+                            <p className={`text-xs ${
+                              message.isOwn ? 'text-primary-foreground/70' : 'text-muted-foreground'
+                            }`}>
+                              {message.file.size}
+                            </p>
+                          </div>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className={message.isOwn ? 'text-primary-foreground hover:bg-background/20' : ''}
+                            onClick={() => handleDownloadFile(message.file!.name)}
+                          >
+                            <Icon name="Download" size={20} />
+                          </Button>
+                        </div>
+                        <p
+                          className={`text-xs ${
+                            message.isOwn ? 'text-primary-foreground/70' : 'text-muted-foreground'
+                          }`}
+                        >
+                          {message.time}
+                        </p>
+                      </div>
+                    ) : (
+                      <>
+                        <p className="text-sm">{message.text}</p>
+                        <p
+                          className={`text-xs mt-1 ${
+                            message.isOwn ? 'text-primary-foreground/70' : 'text-muted-foreground'
+                          }`}
+                        >
+                          {message.time}
+                        </p>
+                      </>
+                    )}
                   </div>
                 </div>
               ))}
@@ -262,9 +374,17 @@ export default function MessengerChat() {
 
           <div className="p-4 border-t">
             <div className="flex gap-2">
-              <Button variant="outline" size="icon">
-                <Icon name="Paperclip" size={20} />
-              </Button>
+              <label htmlFor="file-attach">
+                <Button variant="outline" size="icon" type="button" onClick={() => document.getElementById('file-attach')?.click()}>
+                  <Icon name="Paperclip" size={20} />
+                </Button>
+              </label>
+              <input
+                id="file-attach"
+                type="file"
+                className="hidden"
+                onChange={handleFileUpload}
+              />
               <Input
                 placeholder="Введите сообщение..."
                 value={messageText}
